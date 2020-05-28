@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html> 
+  <head>
+    <!-- Meta Tag -->
+    <meta charset="utf-8">
+    <!-- D3.js Source -->
+    <script type= "text/javascript" src="http://d3js.org/d3.v5.min.js"></script>       
+    <script src="https://d3js.org/topojson.v2.min.js"></script>
+    <style>
+        body{ margin:0;position:fixed;top:0;right:0;bottom:0;left:0; }
+        svg { width: 100%; height: 90%;}
+    </style>
+  </head>
+    
+  <body>
+      <h1><b>Population Density of North Carolina</b></h1>
+        <select id="selectSort">
+            <option value="BG">Yellow to Green</option>
+            <option value="YR">Yellow to Red</option>
+        </select>
+        <select id="selectBoundary">
+            <option value="NCB">No County Boundaries</option>
+            <option value="CB">County Boundaries</option>
+        </select>
+      <script type=text/javascript>
+          var width = 960,
+              height = 500;
+          var svg = d3.select("body").append("svg");
+          var projection = d3.geoAlbersUsa()
+            .translate([(width/14)-300, height - 50])
+            .scale([5000]);
+          
+          var path = d3.geoPath().projection(projection);
+          
+          var color = d3.scaleThreshold()
+              .domain([0, 3000, 25000, 65000, 128000, 256000, 512000, 1000000])
+              .range(d3.schemeOrRd[9]);
+          
+          var color2 = d3.scaleThreshold()
+              .domain([0, 3000, 25000, 65000, 128000, 256000, 512000, 1000000])
+              .range(d3.schemeYlGn[9]);
+          
+          var nc_counties = [];
+          
+          //Lines 33 - 67 are from Mike Bostok's
+          //California data visualization
+          var x = d3.scaleSqrt()
+            .domain([500, 1500000])
+            .rangeRound([440, 950]);
+
+            var g = svg.append("g")
+                .attr("class", "key")
+                .attr("transform", "translate(0,40)");
+
+            g.selectAll("rect")
+              .data(color2.range().map(function(d) {
+                  d = color2.invertExtent(d);
+                  if (d[0] == null) d[0] = x.domain()[0];
+                  if (d[1] == null) d[1] = x.domain()[1];
+                  return d;
+                }))
+              .enter().append("rect")
+                .attr("height", 8)
+                .attr("x", function(d) { return x(d[0]); })
+                .attr("width", function(d) { 
+                        var value = x(d[1]) - x(d[0]);
+                        if(value > 0){
+                            return value;
+                        } else{
+                            return 0;
+                        }
+                })
+                .attr("fill", function(d) { return color2(d[0]); });
+
+            g.append("text")
+                .attr("class", "caption")
+                .attr("x", x.range()[0])
+                .attr("y", -6)
+                .attr("fill", "#000")
+                .attr("text-anchor", "start")
+                .attr("font-weight", "bold")
+                .text("Population per square mile");
+
+            g.call(d3.axisBottom(x)
+                .tickSize(13)
+                .tickValues(color.domain()))
+              .select(".domain")
+                .remove();
+
+           d3.csv('north_carolina_population.csv').then(function(data){
+               for(var i = 0; i < data.length; ++i){
+                   nc_counties.push(data[i])
+               }
+           });
+          
+          console.log(nc_counties)
+          var i = 0;
+          
+          d3.json('ustopo.json').then(function(data){
+              console.log(data)
+              var north_carolina = topojson.feature(data, data.objects.gadm36_USA_2);
+              
+              svg.selectAll(".land")
+                .data(north_carolina.features)
+                .enter()
+                .append("path")
+                .attr("d", path)
+                .attr("fill", function(d){ console.log(i); return color2(nc_counties[i++].Population)})
+          });
+          
+    
+            d3.select("#selectSort").on("change", function() {
+            
+            var j = 0;
+            
+            console.log(this.selectedIndex)
+            console.log("testtesttest")
+                
+            if(this.selectedIndex > 0){
+                var legend = d3.selectAll("rect")
+                    .attr("fill",  function(d) { return color(d[0]); })
+                var land = d3.selectAll("path")
+                    .attr("fill", function(d){return color(nc_counties[j++].Population)});
+            }else{
+                var legend = d3.selectAll("rect")
+                    .attr("fill",  function(d) { return color2(d[0]); })
+                var land = d3.selectAll("path")
+                .attr("fill", function(d){return color2(nc_counties[j++].Population)});
+            }
+                
+            })
+          
+            d3.select("#selectBoundary").on("change", function(){
+                
+                console.log(this.selectedIndex)
+                
+                if(this.selectedIndex > 0){
+                    var boundary = d3.selectAll("path")
+                        .attr("stroke", "black")
+                } else{
+                    var boundary = d3.selectAll("path")
+                        .attr("stroke", "#ffffff00")
+                }
+                
+            });
+          
+        
+      </script>
+      
+      <h4>Emil Ingemansson</h4>
+  </body>
+</html>
+
+
+<!--
+
+        var svg = d3.select("svg");
+          
+        var width = +svg.attr("width");
+        var height = +svg.attr("height");
+        
+        var path = d3.geoPath();
+          
+        var color = d3.scaleThreshold()
+            .domain([1, 10, 50, 200, 500, 1000, 2000, 4000])
+            .range(d3.schemeOrRd[9]);
+          
+        var x = d3.scaleSqrt()
+            .domain([0, 4500])
+            .rangeRound([440, 950]);
+          
+        var g = svg.append("g")
+            .attr("class", "key")
+            .attr("transform", "translate(0,40)");
+          
+        g.selectAll("rect")
+            .data(color.range().map(function(d) {
+                d = color.invertExtent(d);
+                if (d[0] == null) d[0] = x.domain()[0];
+                if (d[1] == null) d[1] = x.domain()[1];
+                return d;
+        }))
+        .enter().append("rect")
+            .attr("height", 8)
+            .attr("x", function(d) { return x(d[0]); })
+            .attr("width", function(d) { return x(d[1]) - x(d[0]); })
+            .attr("fill", function(d) { return color(d[0]); });
+          
+        g.append("text")
+            .attr("class", "caption")
+            .attr("x", x.range()[0])
+            .attr("y", -6)
+            .attr("fill", "#000")
+            .attr("text-anchor", "start")
+            .attr("font-weight", "bold")
+            .text("Population per square mile");
+
+        g.call(d3.axisBottom(x)
+            .tickSize(13)
+            .tickValues(color.domain()))
+            .select(".domain")
+            .remove();
+          
+        d3.json("us.json")
+            .then(function(topology){
+                console.log(topology)
+            
+                svg.selectAll("path")
+                    .data(topology.geometries)
+                    .enter()
+                    .append("path")
+                    .attr("d", path);
+        });
+            
+//            svg.append("g")
+//                .selectAll("path")
+//                .data(topojson.feature(topology, topology.objects.tracts).features)
+//                .enter().append("path")
+//                  .attr("fill", function(d) { return color(d.properties.density); })
+//                  .attr("d", path);
+//            
+//            svg.append("path")
+//              .datum(topojson.feature(topology, topology.objects.counties))
+//              .attr("fill", "none")
+//              .attr("stroke", "#000")
+//              .attr("stroke-opacity", 0.3)
+//              .attr("d", path);
+-->
+
+
+
+
+
+
+
+
+
+
+
+<!--------======================-->
+
+
+
+
+
+<!--
+        var width = 960,
+            height = 1160;
+
+        var svg = d3.select("body").append("svg")
+            .attr("width", width)
+            .attr("height", height);
+          
+        var path = d3.geoPath();
+
+        d3.json("states-10m.json")
+            .then(function(us){
+                console.log(us)
+                console.log(us.objects.states)
+                svg.append("path")
+                    .attr("d", path(us))
+                    .attr("fill", "lightgray")
+                    .attr("stroke", "white");
+        });
+        d3.json("ustopo.json")
+            .then(function(us){
+                console.log(us);
+        });
+        
+-->
